@@ -15,6 +15,14 @@ app.get('/tasks', (req, res) => {
   res.json(tasks);
 });
 
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    uptime: process.uptime()
+  });
+});
+
+
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });
