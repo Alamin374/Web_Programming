@@ -12,5 +12,22 @@ const tasks = [
 router.get('/tasks', (req, res) => {
   res.json(tasks);
 });
+router.get('/task/:id', (req, res) => {
+  const id = Number(req.params.id);
+
+  // Invalid ID format
+  if (isNaN(id)) {
+    return res.status(400).json({ error: "Invalid ID format" });
+  }
+
+  const task = tasks.find(t => t.id === id);
+
+  if (!task) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+
+  res.json(task);
+});
+
 
 module.exports = router;
