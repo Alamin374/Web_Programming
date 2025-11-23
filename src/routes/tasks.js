@@ -102,22 +102,40 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE task
+// SOFT DELETE task (set deleted_at timestamp)
 router.delete('/:id', async (req, res) => {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    try {
-        const [result] = await db.query('DELETE FROM tasks WHERE id = ?', [id]);
+  try {
+    const [result] = await db.query(
+      "UPDATE tasks SET deleted_at = NOW() WHERE id = ? AND deleted_at IS NULL",
+      [id]
+    );
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'Task not found' });
-        }
-
-        res.status(204).send();
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to delete task' });
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Task not found or already deleted" });
     }
+
+    res.status(204).send();
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ error: "Failed to soft delete task" });
+  }
 });
+
+// GET only soft-deleted tasks
+router.get('/deleted/all', async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      "SELECT * FROM tasks WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC"
+    );
+
+    res.json(rows);
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
 
 module.exports = router;
