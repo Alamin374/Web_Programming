@@ -3,15 +3,47 @@ const router = express.Router();
 const db = require('../config/db');
 
 // GET all tasks
+// GET /tasks with pagination + search + exclude soft-deleted items
 router.get('/', async (req, res) => {
-    try {
-        const [rows] = await db.query('SELECT * FROM tasks ORDER BY created_at DESC');
-        res.json(rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Database error' });
-    }
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+    const search = req.query.q ? `%${req.query.q}%` : "%%";
+    const offset = (page - 1) * limit;
+
+    // Count total non-deleted tasks
+    const [countResult] = await db.query(
+      "SELECT COUNT(*) AS count FROM tasks WHERE deleted_at IS NULL AND title LIKE ?",
+      [search]
+    );
+
+    const totalTasks = countResult[0].count;
+    const totalPages = Math.ceil(totalTasks / limit);
+
+    // Paginated tasks
+    const [rows] = await db.query(
+      `SELECT * FROM tasks 
+       WHERE deleted_at IS NULL 
+       AND title LIKE ? 
+       ORDER BY created_at DESC 
+       LIMIT ? OFFSET ?`,
+      [search, limit, offset]
+    );
+
+    res.json({
+      totalTasks,
+      totalPages,
+      currentPage: page,
+      limit,
+      data: rows
+    });
+
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ error: "Database error" });
+  }
 });
+
 
 // POST create task
 router.post('/', async (req, res) => {
