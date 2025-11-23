@@ -1,20 +1,17 @@
 const express = require('express');
-const taskRouter = require('./routes/tasks');
+const taskRoutes = require('./routes/tasks');
 
 const app = express();
 const port = 3000;
 
 app.use(express.json());
 
+// Routes
+app.use('/tasks', taskRoutes);
+
 app.get('/', (req, res) => {
-  res.send("Task Management API is running!");
+  res.send("MySQL Powered Task Management API Running");
 });
-
-app.get('/health', (req, res) => {
-  res.json({ status: "healthy", uptime: process.uptime() });
-});
-
-app.use('/', taskRouter);
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
